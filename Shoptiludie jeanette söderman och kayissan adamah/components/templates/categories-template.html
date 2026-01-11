@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+
+<ul class="list-group text-center">
+    {{#each categories}}
+    <li class="list-group-item fs-5">
+        <div class="d-flex flex-column align-items-center">
+            <span class="category-name mb-2">{{capitalize this}}</span>
+            <button class="btn btn-sm btn-outline-primary btn-select" data-category="{{this}}">
+                Visa produkter
+            </button>
+        </div>
+    </li>
+    {{/each}}
+</ul>

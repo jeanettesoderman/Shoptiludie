@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Shop 'til u die</title>
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Shoelace (för betygsstjärnor och drawer) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.0/cdn/themes/light.css">
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.15.0/cdn/shoelace.js"></script>
+
+  <!-- Handlebars -->
+  <script src="https://cdn.jsdelivr.net/npm/handlebars@4.7.7/dist/handlebars.min.js"></script>
+
+  <!-- Fuse.js för sökfunktion -->
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+
+  <!-- Egen CSS -->
+  <link rel="stylesheet" href="styles/app.css">
+</head>
+<body>
+  <div class="app-shell container">
+    <header>
+      <div class="header-accent"></div>
+      <h2 class="text-center">🛍️
+        <img src="https://cdn-icons-gif.flaticon.com/12539/12539571.gif" alt="Pumpa" style="width: 60px; height: 60px; margin-bottom: 5px;">
+        SHOP 'TIL U DIE
+        <img src="https://cdn-icons-gif.flaticon.com/12404/12404091.gif" alt="Pumpa" style="width: 60px; height: 60px; margin-bottom: 5px;">
+      </h2>
+    </header>
+  </div>
+
+  <div class="container app-shell">
+    <header class="d-flex align-items-center justify-content-between mb-3">
+      <div class="wperc-100 w-100">
+        <div class="header-accent"></div>
+        <div class="d-flex align-items-center justify-content-end flex-wrap gap-2">
+          <!-- SÖKFÄLT MED BOOTSTRAP INPUT-GROUP -->
+          <div class="search-container">
+            <div class="input-group input-group-sm">
+              <input
+                type="text"
+                id="searchInput"
+                class="form-control"
+                placeholder="Sök produkt..."
+                aria-label="Sök produkt"
+              />
+              <button id="searchButton" type="button" class="btn btn-light border px-3">
+                Sök
+              </button>
+            </div>
+            <div class="search-results" id="searchResults"></div>
+          </div>
+
+          <shopping-cart-summary></shopping-cart-summary>
+        </div>
+      </div>
+    </header>
+
+    <div class="row g-3">
+      <aside class="col-lg-3 left-col">
+        <div class="card mb-3">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Kategorier</h5>
+            <categories-component></categories-component>
+          </div>
+        </div>
+      </aside>
+
+      <main class="col-lg-9 main-col">
+        <div class="card mb-3">
+          <div class="card-body">
+            <products-component></products-component>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <footer class="mt-4 text-muted small text-center py-3">
+      Demo prototype — använder <a href="https://fakestoreapi.com" target="_blank" rel="noopener noreferrer">Fake Store API</a>.
+    </footer>
+  </div>
+
+  <!-- Varukorgsmodal -->
+  <div class="cart-modal" id="cartModal">
+    <div class="cart-modal-header">
+      <h5 class="modal-title">Din varukorg</h5>
+      <button type="button" class="btn-close" id="closeCartModal" aria-label="Stäng"></button>
+    </div>
+    <div class="cart-modal-body" id="cartModalBody"><!-- Innehåll laddas via JS --></div>
+    <div class="cart-modal-footer">
+      <div class="d-flex justify-content-between mb-2">
+        <span>Totalt:</span>
+        <span id="cartModalTotal">0 kr</span>
+      </div>
+      <button class="btn btn-primary w-100 mb-2" id="proceedToCheckout">Gå till kassa</button>
+      <button class="btn btn-outline-secondary w-100" id="continueShopping">Fortsätt handla</button>
+    </div>
+  </div>
+
+  <!-- Betalningsmodal -->
+  <div class="cart-modal" id="checkoutModal">
+    <div class="cart-modal-header">
+      <h5 class="modal-title">Kassa</h5>
+      <button type="button" class="btn-close" id="closeCheckoutModal" aria-label="Stäng"></button>
+    </div>
+    <div class="cart-modal-body">
+      <h6>Betalningsmetod</h6>
+      <div class="payment-options">
+        <div class="payment-option" data-payment="creditcard">
+          <input type="radio" id="paymentCreditCard" name="paymentMethod" value="creditcard" checked>
+          <label class="payment-option-label" for="paymentCreditCard">Kreditkort</label>
+          <img src="https://www.freepnglogos.com/uploads/mastercard-png/mastercard-property-tax-disclaimer-11.png" alt="Visa" style="height:30px;width:auto;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))">
+        </div>
+        <div class="payment-option" data-payment="swish">
+          <input type="radio" id="paymentSwish" name="paymentMethod" value="swish">
+          <label class="payment-option-label" for="paymentSwish">Swish</label>
+          <img src="https://images.seeklogo.com/logo-png/40/1/swish-logo-png_seeklogo-408713.png" alt="Swish" style="height:30px;width:auto;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))">
+        </div>
+        <div class="payment-option" data-payment="klarna">
+          <input type="radio" id="paymentKlarna" name="paymentMethod" value="klarna">
+          <label class="payment-option-label" for="paymentKlarna">Klarna</label>
+          <img src="https://images.seeklogo.com/logo-png/37/1/klarna-logo-png_seeklogo-373032.png" alt="Klarna" style="height:30px;width:auto;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))">
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <h6>Leveransalternativ</h6>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="shippingMethod" id="shippingHome" value="home" checked>
+          <label class="form-check-label" for="shippingHome">Hemleverans (49 kr)</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="shippingMethod" id="shippingStore" value="store">
+          <label class="form-check-label" for="shippingStore">Uthämtning i butik (Gratis)</label>
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <h6>Faktureringsinformation</h6>
+        <div class="mb-2">
+          <label for="checkoutName" class="form-label small">Namn</label>
+          <input type="text" class="form-control" id="checkoutName" placeholder="Ditt namn">
+        </div>
+        <div class="mb-2">
+          <label for="checkoutEmail" class="form-label small">E-post</label>
+          <input type="email" class="form-control" id="checkoutEmail" placeholder="Din e-post">
+        </div>
+        <div class="mb-2">
+          <label for="checkoutAddress" class="form-label small">Adress</label>
+          <input type="text" class="form-control" id="checkoutAddress" placeholder="Din adress">
+        </div>
+        <div class="mb-2">
+          <label for="checkoutPostalCode" class="form-label small">Postnummer</label>
+          <input type="text" class="form-control" id="checkoutPostalCode" placeholder="Postnummer">
+        </div>
+        <div class="mb-2">
+          <label for="checkoutCity" class="form-label small">Stad</label>
+          <input type="text" class="form-control" id="checkoutCity" placeholder="Stad">
+        </div>
+      </div>
+    </div>
+    <div class="cart-modal-footer">
+      <button class="btn btn-primary w-100" id="completePurchase">Slutför köp</button>
+    </div>
+  </div>
+
+  <!-- Orderbekräftelse -->
+  <div class="cart-modal" id="orderConfirmationModal">
+    <div class="cart-modal-header">
+      <h5 class="modal-title">Orderbekräftelse</h5>
+      <button type="button" class="btn-close" id="closeOrderConfirmationModal" aria-label="Stäng"></button>
+    </div>
+    <div class="cart-modal-body checkout-success">
+      <div class="mb-3">
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-check-circle-fill text-success" viewBox="0 0 16 16">
+          <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+        </svg>
+      </div>
+      <h3>Tack för din beställning!</h3>
+      <p>Din order har mottagits och behandlas nu. Du kommer att få en orderbekräftelse via e-post snart.</p>
+      <div class="order-summary">
+        <h6>Ordernummer: <span id="orderNumber">#12345</span></h6>
+        <h6>Totalt: <span id="orderTotal">0 kr</span></h6>
+        <h6>Betalningsmetod: <span id="orderPaymentMethod">Kreditkort</span></h6>
+        <h6>Leveransmetod: <span id="orderShippingMethod">Hemleverans</span></h6>
+      </div>
+    </div>
+    <div class="cart-modal-footer">
+      <button class="btn btn-primary w-100" id="continueToHome">Fortsätt handla</button>
+    </div>
+  </div>
+
+  <!-- Overlay -->
+  <div class="overlay" id="overlay"></div>
+
+  <!-- ProductDetails som *egen* komponent -->
+  <product-details></product-details>
+
+  <!-- Templates -->
+  <script id="tpl-categories" type="text/x-handlebars-template">
+    <ul class="list-group text-center">
+      {{#each categories}}
+      <li class="list-group-item fs-5">
+        <div class="d-flex flex-column align-items-center">
+          <span class="category-name mb-2">{{capitalize this}}</span>
+          <button class="btn btn-sm btn-outline-primary btn-select" data-category="{{this}}">
+            Visa produkter
+          </button>
+        </div>
+      </li>
+      {{/each}}
+    </ul>
+  </script>
+
+  <!-- UPPDATERAD 28 okt: tpl-products med snabbknapp Lägg i kundvagn -->
+  <script id="tpl-products" type="text/x-handlebars-template">
+    {{#if products.length}}
+    <div class="row g-3">
+      {{#each products}}
+      <div class="col-6 col-md-4 col-lg-4">
+        <div class="card card-product h-100" data-id="{{id}}" tabindex="0" role="button" aria-label="{{title}}, {{formatPrice price}}">
+          <img src="{{image}}" class="card-img-top" alt="{{title}}" loading="lazy">
+          <div class="card-body p-3 d-flex flex-column">
+            <h6 class="card-title mb-1">{{shortTitle title}}</h6>
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <p class="mb-0 small text-muted">{{formatPrice price}}</p>
+              <sl-rating class="ms-1" readonly value="{{rating.rate}}" aria-label="Betyg: {{rating.rate}} av 5"></sl-rating>
+            </div>
+            <div class="d-flex gap-2 mt-auto">
+              <button class="btn btn-sm btn-outline-secondary w-50 btn-quick-add" data-id="{{id}}">Lägg i kundvagn</button>
+              <button class="btn btn-sm btn-primary w-50 btn-more" data-id="{{id}}">Visa mer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {{/each}}
+    </div>
+    {{else}}
+    <div class="text-muted text-center py-4">Välj en kategori för att se produkter.</div>
+    {{/if}}
+  </script>
+
+  <script id="tpl-product-details-drawer" type="text/x-handlebars-template">
+    <div class="d-flex flex-column gap-3">
+      <div class="d-flex gap-3 align-items-start">
+        <img src="{{product.image}}" alt="{{product.title}}" style="width:160px; height:160px; object-fit:contain; background:#fff; padding:8px; border-radius:8px;">
+        <div class="flex-grow-1">
+          <h5>{{product.title}}</h5>
+          <div class="muted-small text-capitalize mb-2">{{product.category}}</div>
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <sl-rating value="{{product.rating.rate}}" readonly style="--symbol-color-active: #f5b301;"></sl-rating>
+            <span class="small">{{product.rating.rate}} ({{product.rating.count}} betyg)</span>
+          </div>
+          <p class="small mb-3">{{product.description}}</p>
+          <div class="fw-bold mb-3">{{formatPrice product.price}}</div>
+          <div class="d-flex align-items-center gap-2 mb-3">
+            <div class="qty-btn-group">
+              <button class="qty-btn btn-minus" data-id="{{product.id}}">−</button>
+              <input type="number" id="drawerQty" class="form-control form-control-sm text-center border-0" value="1" min="1" style="width:60px; flex: 0 0 60px;" aria-label="Antal">
+              <button class="qty-btn btn-plus" data-id="{{product.id}}">+</button>
+            </div>
+            <button class="btn btn-primary btn-add-to-cart">Lägg i kundvagn</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="review-section mt-3">
+        <h6>Recensioner</h6>
+        <div class="reviews-list mb-3">
+          {{#if (lookup ../reviews product.id)}}
+            {{#each (lookup ../reviews product.id)}}
+              <div class="review-item mb-2 p-2 border rounded">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <strong class="small">{{user}}</strong>
+                  <sl-rating value="{{rating}}" readonly style="--symbol-color-active: #f5b301;"></sl-rating>
+                </div>
+                <p class="small mb-0">{{comment}}</p>
+              </div>
+            {{/each}}
+          {{else}}
+            <p class="small text-muted">Inga recensioner ännu.</p>
+          {{/if}}
+        </div>
+
+        <div class="review-form mt-3 p-3 border rounded bg-light">
+          <h6 class="small mb-2">Lämna en recension</h6>
+          <div class="mb-2">
+            <label for="reviewUser" class="form-label small">Ditt namn</label>
+            <input type="text" class="form-control form-control-sm" id="reviewUser" placeholder="Ditt namn">
+          </div>
+          <div class="mb-2">
+            <label for="reviewStars" class="form-label small">Betyg</label>
+            <sl-rating id="reviewStars" style="--symbol-color: #e9e2cc; --symbol-color-active: #f5b301;"></sl-rating>
+          </div>
+          <div class="mb-2">
+            <label for="reviewComment" class="form-label small">Din recension</label>
+            <textarea class="form-control form-control-sm" id="reviewComment" rows="2" placeholder="Skriv din recension..."></textarea>
+          </div>
+          <button id="submitReview" class="btn btn-sm btn-primary">Skicka recension</button>
+        </div>
+      </div>
+    </div>
+  </script>
+
+  <script id="tpl-cart" type="text/x-handlebars-template">
+    {{#if items.length}}
+    <ul class="list-group mb-2">
+      {{#each items}}
+      <li class="list-group-item d-flex justify-content-between align-items-start">
+        <div class="flex-grow-1">
+          <div class="fw-bold small">{{shortTitle title}}</div>
+          <div class="small text-muted">{{formatPrice price}} × {{qty}} = <strong>{{formatPrice total}}</strong></div>
+        </div>
+        <div class="d-flex flex-column align-items-end gap-2">
+          <div class="qty-btn-group">
+            <button class="qty-btn btn-minus" data-id="{{id}}" aria-label="Minska antal">−</button>
+            <input type="number" class="form-control form-control-sm text-center border-0 qty-input" value="{{qty}}" min="1" style="width:50px; flex: 0 0 50px;" data-id="{{id}}" aria-label="Antal">
+            <button class="qty-btn btn-plus" data-id="{{id}}" aria-label="Öka antal">+</button>
+          </div>
+          <button class="btn btn-sm btn-outline-danger btn-remove" data-id="{{id}}" aria-label="Ta bort produkt">Ta bort</button>
+        </div>
+      </li>
+      {{/each}}
+    </ul>
+    <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+      <div class="small text-muted">Totalt:</div>
+      <div class="fw-bold">{{formatPrice grandTotal}}</div>
+    </div>
+    {{else}}
+    <div class="text-muted small text-center py-3">Kundvagnen är tom.</div>
+    {{/if}}
+  </script>
+
+  <script id="tpl-cart-modal" type="text/x-handlebars-template">
+    {{#if items.length}}
+    <div class="cart-items">
+      {{#each items}}
+      <div class="cart-item">
+        <img src="{{image}}" alt="{{title}}" class="cart-item-img">
+        <div class="cart-item-info">
+          <h6 class="mb-0">{{shortTitle title}}</h6>
+          <p class="mb-1 small text-muted">{{formatPrice price}} × {{qty}} = <strong>{{formatPrice total}}</strong></p>
+        </div>
+        <div class="cart-item-actions">
+          <div class="qty-btn-group">
+            <button class="qty-btn btn-minus" data-id="{{id}}" aria-label="Minska antal">−</button>
+            <input type="number" class="form-control form-control-sm text-center border-0 qty-input" value="{{qty}}" min="1" style="width:50px; flex: 0 0 50px;" data-id="{{id}}" aria-label="Antal">
+            <button class="qty-btn btn-plus" data-id="{{id}}" aria-label="Öka antal">+</button>
+          </div>
+          <button class="btn btn-sm btn-outline-danger btn-remove" data-id="{{id}}" aria-label="Ta bort produkt">Ta bort</button>
+        </div>
+      </div>
+      {{/each}}
+    </div>
+    {{else}}
+    <div class="text-muted small text-center py-3">Kundvagnen är tom.</div>
+    {{/if}}
+  </script>
+
+  <script>
+    // Realismfaktorer per kategori
+    const realismFactors = {
+      "electronics": 2,
+      "jewelery": 1.5,
+      "men's clothing": 2,
+      "women's clothing": 2,
+    };
+
+    function adjustPrice(priceUSD, category) {
+      const priceSEK = priceUSD * 10.5;
+      const realismFactor = realismFactors[category] || 3;
+      let adjustedPrice = priceSEK * realismFactor;
+      if (category === "electronics" && adjustedPrice < 500) adjustedPrice = 500;
+      return adjustedPrice;
+    }
+
+    // Handlebars helpers
+    Handlebars.registerHelper('formatPrice', price => {
+      if (typeof price !== 'number') {
+        console.error('Price is not a number:', price);
+        return 'N/A';
+      }
+      return new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK' }).format(price);
+    });
+    Handlebars.registerHelper('shortTitle', t => t.length > 40 ? t.slice(0, 37) + '...' : t);
+    Handlebars.registerHelper('capitalize', s => s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
+
+    // API wrapper
+    const API = {
+      base: 'https://fakestoreapi.com',
+      async getCategories() {
+        return (await fetch(this.base + '/products/categories')).json();
+      },
+      async getProductsByCategory(cat) {
+        const products = await (await fetch(this.base + '/products/category/' + encodeURIComponent(cat))).json();
+        return products.map(product => ({ ...product, price: adjustPrice(product.price, cat) }));
+      },
+      async getProduct(id) {
+        const response = await fetch(this.base + '/products/' + id);
+        if (!response.ok) throw new Error(`Failed to fetch product with id ${id}`);
+        const product = await response.json();
+        return { ...product, price: adjustPrice(product.price, product.category) };
+      },
+      async getAllProducts() {
+        const products = await (await fetch(this.base + '/products')).json();
+        return products.map(product => ({ ...product, price: adjustPrice(product.price, product.category) }));
+      }
+    };
+
+    // Reviews model
+    class ReviewsModel {
+      constructor() {
+        this.key = 'shoptiludie_reviews_v2';
+        this.reviews = this.load();
+      }
+      load() {
+        try {
+          const raw = localStorage.getItem(this.key);
+          return raw ? JSON.parse(raw) : {};
+        } catch { return {}; }
+      }
+      save() {
+        localStorage.setItem(this.key, JSON.stringify(this.reviews));
+      }
+      addReview(pid, user, rating, comment) {
+        if (!this.reviews[pid]) this.reviews[pid] = [];
+        this.reviews[pid].push({ user, rating, comment });
+        this.save();
+      }
+    }
+    const REVIEWS = new ReviewsModel();
+
+    // Cart model
+    class CartModel {
+      constructor() {
+        this.key = 'shoptiludie_cart_v2';
+        this.items = this.load();
+      }
+      load() {
+        try {
+          const raw = localStorage.getItem(this.key);
+          return raw ? JSON.parse(raw) : [];
+        } catch { return []; }
+      }
+      save() {
+        localStorage.setItem(this.key, JSON.stringify(this.items));
+        document.dispatchEvent(new CustomEvent('cart-updated', { detail: { cart: this.getCartSummary() } }));
+      }
+      addItem(p, qty = 1) {
+        const e = this.items.find(i => i.id === p.id);
+        if (e) {
+          e.qty += qty;
+          e.total = e.qty * e.price;
+        } else {
+          this.items.push({ id: p.id, title: p.title, price: p.price, qty, image: p.image, total: p.price * qty });
+        }
+        this.save();
+        document.dispatchEvent(new CustomEvent('added-to-cart', { detail: { product: p, qty } }));
+      }
+      removeItem(id) {
+        this.items = this.items.filter(i => i.id !== id);
+        this.save();
+      }
+      changeQty(id, d) {
+        const it = this.items.find(i => i.id === id);
+        if (!it) return;
+        it.qty = Math.max(1, it.qty + d);
+        it.total = it.qty * it.price;
+        this.save();
+      }
+      updateQty(id, qty) {
+        const it = this.items.find(i => i.id === id);
+        if (!it) return;
+        it.qty = Math.max(1, qty);
+        it.total = it.qty * it.price;
+        this.save();
+      }
+      clear() {
+        this.items = [];
+        this.save();
+      }
+      getCartSummary() {
+        const g = this.items.reduce((s, x) => s + x.total, 0);
+        const t = this.items.reduce((s, x) => s + x.qty, 0);
+        return { items: this.items, grandTotal: g, totalItems: t };
+      }
+    }
+    const CART = new CartModel();
+
+    // Categories component
+    class CategoriesComponent extends HTMLElement {
+      constructor() {
+        super();
+        this.tpl = Handlebars.compile(document.getElementById('tpl-categories').innerHTML);
+      }
+      connectedCallback() {
+        API.getCategories().then(categories => {
+          this.innerHTML = this.tpl({ categories });
+          this.querySelectorAll('.btn-select').forEach(btn => {
+            btn.addEventListener('click', () => {
+              document.dispatchEvent(new CustomEvent('selected-category', { detail: { category: btn.dataset.category } })); 
+            });
+          });
+          if (categories.length > 0) {
+            setTimeout(() => this.querySelector('.btn-select').click(), 100);
+          }
+        });
+      }
+    }
+    customElements.define('categories-component', CategoriesComponent);
+
+    // UPPDATERAD: Products component med snabb-add till kundvagn
+    class ProductsComponent extends HTMLElement {
+      constructor() {
+        super();
+        this.tpl = Handlebars.compile(document.getElementById('tpl-products').innerHTML);
+        this._products = []; // cache av aktuella produkter
+      }
+      connectedCallback() {
+        this.innerHTML = this.tpl({ products: [] });
+        document.addEventListener('selected-category', async (e) => {
+          const products = await API.getProductsByCategory(e.detail.category);
+          this.render(products);
+        });
+        document.addEventListener('search-products', (e) => this.render(e.detail.products));
+      }
+      render(products) {
+        this._products = products || [];
+        this.innerHTML = this.tpl({ products: this._products });
+
+        // Klick på hela kortet öppnar detaljer
+        this.querySelectorAll('.card-product').forEach(card => {
+          card.addEventListener('click', () => {
+            document.dispatchEvent(new CustomEvent('selected-product', { detail: { id: Number(card.dataset.id) } }));
+          });
+        });
+
+        // "Visa mer" ska inte bubbla upp kortets klick
+        this.querySelectorAll('.btn-more').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.dispatchEvent(new CustomEvent('selected-product', { detail: { id: Number(btn.dataset.id) } }));
+          });
+        });
+
+        // snabbknapp lägg i kundvagn
+        this.querySelectorAll('.btn-quick-add').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const id = Number(btn.dataset.id);
+            const product = this._products.find(p => p.id === id);
+            if (product) CART.addItem(product, 1);
+          });
+        });
+      }
+    }
+    customElements.define('products-component', ProductsComponent);
+
+    // Sök (Fuse)
+    class Search {
+      constructor() {
+        this.input = document.getElementById('searchInput');
+        this.button = document.getElementById('searchButton');
+        this.results = document.getElementById('searchResults');
+        this.products = [];
+        this.fuse = null;
+        this.init();
+      }
+      async init() {
+        this.products = await API.getAllProducts();
+        this.fuse = new Fuse(this.products, {
+          keys: ['title', 'description', 'category'],
+          threshold: 0.4,
+          includeScore: true
+        });
+        this.setupEventListeners();
+      }
+      setupEventListeners() {
+        this.input.addEventListener('input', () => this.handleInput());
+        this.button.addEventListener('click', () => this.performSearch());
+        this.input.addEventListener('keydown', (e) => { if (e.key === 'Enter') this.performSearch(); });
+        document.addEventListener('click', (e) => {
+          if (!this.results.contains(e.target) && e.target !== this.input && e.target !== this.button) {
+            this.results.style.display = 'none';
+          }
+        });
+      }
+      handleInput() {
+        const query = this.input.value.trim();
+        if (query.length < 2) {
+          this.results.style.display = 'none';
+          return;
+        }
+        const results = this.fuse.search(query).slice(0, 5);
+        this.displayResults(results);
+      }
+
+      // Uppdaterad displayResults, mappar Fuse-resultat till rena produkter,
+      // skickar event 'search-products' så din ProductsComponent kan rendera utan ändringar.
+      displayResults(results) {
+        if (!results || results.length === 0) {
+          this.results.style.display = 'none';
+          return;
+        }
+        this.results.innerHTML = results.map(result => {
+          const p = result.item ? result.item : result;
+          return `
+            <div class="search-result-item" data-id="${p.id}">
+              <div class="d-flex align-items-center gap-2 p-2">
+                <img src="${p.image}" alt="${p.title}" style="width:40px;height:40px;object-fit:contain;">
+                <div>
+                  <div class="small fw-bold">${p.title}</div>
+                  <div class="small text-muted">${new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK' }).format(p.price)}</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+        this.results.style.display = 'block';
+        this.results.querySelectorAll('.search-result-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const productId = item.dataset.id;
+            this.input.value = '';
+            this.results.style.display = 'none';
+            document.dispatchEvent(new CustomEvent('selected-product', { detail: { id: Number(productId) } }));
+          });
+        });
+
+        const productsArray = results.map(r => r.item ? r.item : r);
+        document.dispatchEvent(new CustomEvent('search-products', { detail: { products: productsArray } }));
+      }
+
+      performSearch() {
+        const query = self.searchInput?.value?.trim?.() ?? this.input.value.trim();
+        if (!query) return;
+        const filtered = this.products.filter(p =>
+          p.title.toLowerCase().includes(query.toLowerCase()) ||
+          p.description.toLowerCase().includes(query.toLowerCase())
+        );
+        document.dispatchEvent(new CustomEvent('search-products', { detail: { products: filtered } }));
+        this.results.style.display = 'none';
+      }
+    }
+
+    // ProductDetails som custom element
+    class ProductDetails extends HTMLElement {
+      constructor() {
+        super();
+        this.tpl = null;
+        this.drawer = null;
+        this.content = null;
+      }
+      connectedCallback() {
+        this.innerHTML = `
+          <sl-drawer id="pd-drawer" placement="end" label="Produktdetaljer" style="--size:520px;">
+            <div id="pd-content"></div>
+          </sl-drawer>
+        `;
+        this.drawer = this.querySelector('#pd-drawer');
+        this.content = this.querySelector('#pd-content');
+        this.tpl = Handlebars.compile(document.getElementById('tpl-product-details-drawer').innerHTML);
+
+        document.addEventListener('selected-product', async (e) => {
+          await this.showDetails(e.detail.id);
+        });
+      }
+      async showDetails(id) {
+        try {
+          const product = await API.getProduct(id);
+          this.content.innerHTML = this.tpl({ product, reviews: REVIEWS.reviews });
+
+          const qtyInput = this.content.querySelector('#drawerQty');
+          const minus = this.content.querySelector('.btn-minus');
+          const plus = this.content.querySelector('.btn-plus');
+          const btnAdd = this.content.querySelector('.btn-add-to-cart');
+
+          minus.addEventListener('click', () => { qtyInput.value = Math.max(1, Number(qtyInput.value) - 1); });
+          plus.addEventListener('click', () => { qtyInput.value = Number(qtyInput.value) + 1; });
+          btnAdd.addEventListener('click', () => {
+            const qty = Math.max(1, Number(qtyInput.value) || 1);
+            CART.addItem(product, qty);
+            this.drawer.hide();
+          });
+
+          const submit = this.content.querySelector('#submitReview');
+          if (submit) {
+            submit.addEventListener('click', () => {
+              const user = this.content.querySelector('#reviewUser').value.trim();
+              const rating = this.content.querySelector('#reviewStars').value;
+              const comment = this.content.querySelector('#reviewComment').value.trim();
+              if (user && comment) {
+                REVIEWS.addReview(product.id, user, rating, comment);
+                this.showDetails(id);
+              } else {
+                alert('Vänligen fyll i ditt namn och din recension!');
+              }
+            });
+          }
+
+          this.drawer.show();
+        } catch (error) {
+          console.error("Fel vid hämtning av produkt:", error);
+        }
+      }
+    }
+    customElements.define('product-details', ProductDetails);
+
+    // Shopping cart (inline komponent)
+    class ShoppingCart extends HTMLElement {
+      constructor() {
+        super();
+        this.tpl = Handlebars.compile(document.getElementById('tpl-cart').innerHTML);
+        document.addEventListener('cart-updated', e => this.render(e.detail.cart));
+        document.addEventListener('added-to-cart', e => {
+          const toast = document.createElement('div');
+          toast.className = 'position-fixed top-0 end-0 p-3';
+          toast.style.zIndex = 1000;
+          toast.innerHTML = `
+            <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+              <div class="toast-header bg-success text-white">
+                <strong class="me-auto">Produkt tillagd</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Stäng"></button>
+              </div>
+              <div class="toast-body">
+                ${e.detail.product.title} (x${e.detail.qty}) är tillagd i kundvagnen!
+              </div>
+            </div>
+          `;
+          document.body.appendChild(toast);
+          setTimeout(() => toast.remove(), 3000);
+        });
+      }
+      connectedCallback() { this.render(CART.getCartSummary()); }
+      render(cart) {
+        const items = (cart.items || []).map(i => ({ ...i, total: i.price * i.qty }));
+        this.innerHTML = this.tpl({ items, grandTotal: cart.grandTotal || 0 });
+        this._bind();
+      }
+      _bind() {
+        this.querySelectorAll('.btn-remove').forEach(b => b.addEventListener('click', () => CART.removeItem(Number(b.dataset.id))));
+        this.querySelectorAll('.btn-plus').forEach(b => b.addEventListener('click', () => CART.changeQty(Number(b.dataset.id), 1)));
+        this.querySelectorAll('.btn-minus').forEach(b => b.addEventListener('click', () => CART.changeQty(Number(b.dataset.id), -1)));
+        this.querySelectorAll('.qty-input').forEach(input => {
+          input.addEventListener('change', (e) => {
+            const qty = Math.max(1, Number(e.target.value));
+            CART.updateQty(Number(e.target.dataset.id), qty);
+          });
+        });
+      }
+    }
+    customElements.define('shopping-cart', ShoppingCart);
+
+    // Shopping cart summary
+    class ShoppingCartSummary extends HTMLElement {
+      constructor() {
+        super();
+        this.render(CART.getCartSummary());
+        document.addEventListener('cart-updated', e => this.render(e.detail.cart));
+      }
+      render(cart) {
+        const totalItems = cart.totalItems || 0, grand = cart.grandTotal || 0;
+        this.innerHTML = `
+          <div class="d-flex align-items-center">
+            <button class="btn btn-outline-primary position-relative" id="openCartBtn" aria-label="Öppna kundvagn">
+              🛒 <span class="badge bg-primary rounded-pill cart-badge">${totalItems}</span>
+              <span class="sr-only">Varukorg, ${totalItems} artiklar</span>
+            </button>
+            <div class="ms-2 text-end small">
+              <div class="text-muted">Varukorg</div>
+              <div class="fw-bold">${new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK' }).format(grand)}</div>
+            </div>
+          </div>`;
+        this.querySelector('#openCartBtn')?.addEventListener('click', () => openCartModal());
+      }
+    }
+    customElements.define('shopping-cart-summary', ShoppingCartSummary);
+
+    // Cart modal helpers
+    function openCartModal() {
+      const cartModal = document.getElementById('cartModal');
+      const overlay = document.getElementById('overlay');
+      const cart = CART.getCartSummary();
+      const tpl = Handlebars.compile(document.getElementById('tpl-cart-modal').innerHTML);
+      document.getElementById('cartModalBody').innerHTML = tpl(cart);
+      document.getElementById('cartModalTotal').textContent =
+        new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK' }).format(cart.grandTotal || 0);
+
+      document.querySelectorAll('#cartModal .btn-plus').forEach(b => b.addEventListener('click', () => CART.changeQty(Number(b.dataset.id), 1)));
+      document.querySelectorAll('#cartModal .btn-minus').forEach(b => b.addEventListener('click', () => CART.changeQty(Number(b.dataset.id), -1)));
+      document.querySelectorAll('#cartModal .btn-remove').forEach(b => b.addEventListener('click', () => CART.removeItem(Number(b.dataset.id))));
+      document.querySelectorAll('#cartModal .qty-input').forEach(input => {
+        input.addEventListener('change', (e) => {
+          const qty = Math.max(1, Number(e.target.value));
+          CART.updateQty(Number(e.target.dataset.id), qty);
+        });
+      });
+
+      cartModal.classList.add('open');
+      overlay.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeCartModal() {
+      const cartModal = document.getElementById('cartModal');
+      const overlay = document.getElementById('overlay');
+      cartModal.classList.remove('open');
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    function openCheckoutModal() {
+      const cartModal = document.getElementById('cartModal');
+      const checkoutModal = document.getElementById('checkoutModal');
+      cartModal.classList.remove('open');
+      checkoutModal.classList.add('open');
+    }
+    function closeCheckoutModal() {
+      const checkoutModal = document.getElementById('checkoutModal');
+      const overlay = document.getElementById('overlay');
+      checkoutModal.classList.remove('open');
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    function openOrderConfirmationModal() {
+      const checkoutModal = document.getElementById('checkoutModal');
+      const orderConfirmationModal = document.getElementById('orderConfirmationModal');
+      const cart = CART.getCartSummary();
+      const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || 'creditcard';
+      const shippingMethod = document.querySelector('input[name="shippingMethod"]:checked')?.value || 'home';
+      const paymentMethods = { creditcard: 'Kreditkort', swish: 'Swish', klarna: 'Klarna' };
+      const shippingMethods = { home: 'Hemleverans', store: 'Uthämtning i butik' };
+
+      document.getElementById('orderNumber').textContent = `#${Math.floor(Math.random() * 100000)}`;
+      document.getElementById('orderTotal').textContent =
+        new Intl.NumberFormat('sv-SE', { style: 'currency', currency: 'SEK' }).format(cart.grandTotal || 0);
+      document.getElementById('orderPaymentMethod').textContent = paymentMethods[paymentMethod] || 'Kreditkort';
+      document.getElementById('orderShippingMethod').textContent = shippingMethods[shippingMethod] || 'Hemleverans';
+
+      checkoutModal.classList.remove('open');
+      orderConfirmationModal.classList.add('open');
+    }
+    function closeOrderConfirmationModal() {
+      const orderConfirmationModal = document.getElementById('orderConfirmationModal');
+      const overlay = document.getElementById('overlay');
+      orderConfirmationModal.classList.remove('open');
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+      CART.clear();
+    }
+
+    // FIX: Rita om sidopanelen när varukorgen uppdateras (så "Ta bort" syns direkt)
+    document.addEventListener('cart-updated', () => {
+      const cartModal = document.getElementById('cartModal');
+      if (cartModal.classList.contains('open')) {
+        openCartModal();
+      }
+    });
+
+    // Init cart-badge mm
+    document.dispatchEvent(new CustomEvent('cart-updated', { detail: { cart: CART.getCartSummary() } }));
+
+    // Event listeners för modaler
+    document.getElementById('closeCartModal').addEventListener('click', closeCartModal);
+    document.getElementById('closeCheckoutModal').addEventListener('click', closeCheckoutModal);
+    document.getElementById('closeOrderConfirmationModal').addEventListener('click', closeOrderConfirmationModal);
+    document.getElementById('proceedToCheckout').addEventListener('click', openCheckoutModal);
+    document.getElementById('continueShopping').addEventListener('click', closeCartModal);
+    document.getElementById('continueToHome').addEventListener('click', closeOrderConfirmationModal);
+    document.getElementById('completePurchase').addEventListener('click', openOrderConfirmationModal);
+    document.getElementById('overlay').addEventListener('click', () => {
+      closeCartModal();
+      closeCheckoutModal();
+      closeOrderConfirmationModal();
+    });
+
+    // Init payment options
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.payment-option').forEach(option => {
+        option.addEventListener('click', () => {
+          const radio = option.querySelector('input[type="radio"]');
+          if (!radio.checked) radio.checked = true;
+          document.querySelectorAll('.payment-option').forEach(opt => opt.classList.remove('selected'));
+          option.classList.add('selected');
+        });
+      });
+      document.querySelectorAll('.form-control').forEach(input => {
+        input.style.padding = '0.375rem 0.75rem';
+      });
+      document.querySelectorAll('.form-check-label').forEach(label => {
+        label.style.marginLeft = '0.5rem';
+      });
+    });
+
+    // Starta sök
+    setTimeout(() => new Search(), 300);
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

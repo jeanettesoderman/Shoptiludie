@@ -1,0 +1,25 @@
+    {{#if items.length}}
+      <ul class="list-group mb-2">
+        {{#each items}}
+        <li class="list-group-item d-flex justify-content-between align-items-start">
+          <div>
+            <div class="fw-bold small">{{shortTitle title}}</div>
+            <div class="small text-muted">{{formatPrice price}} × {{qty}} = {{formatPrice total}}</div>
+          </div>
+          <div class="d-flex flex-column align-items-end">
+            <div class="btn-group btn-group-sm mb-1" role="group">
+              <button class="btn btn-outline-secondary btn-decrease" data-id="{{id}}">−</button>
+              <button class="btn btn-outline-secondary btn-increase" data-id="{{id}}">+</button>
+            </div>
+            <button class="btn btn-sm btn-outline-danger btn-remove" data-id="{{id}}">Ta bort</button>
+          </div>
+        </li>
+        {{/each}}
+      </ul>
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="small text-muted">Totalt:</div>
+        <div><strong>{{formatPrice grandTotal}}</strong></div>
+      </div>
+    {{else}}
+      <div class="text-muted small">Kundvagnen är tom.</div>
+    {{/if}}

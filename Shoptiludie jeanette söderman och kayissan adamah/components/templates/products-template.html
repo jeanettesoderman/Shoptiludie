@@ -1,0 +1,21 @@
+{{#if products}}
+<div class="row g-3">
+  {{#each products}}
+  <div class="col-sm-6 col-md-4 col-lg-3">
+    <div class="card card-product h-100" role="button" aria-label="{{title}}, {{formatPrice price}}">
+      <img src="{{image}}" class="card-img-top" alt="{{title}}" loading="lazy">
+      <div class="card-body p-3 d-flex flex-column">
+        <h6 class="card-title mb-1">{{shortTitle title}}</h6>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <p class="mb-0 small text-muted">{{formatPrice price}}</p>
+          <sl-rating class="ms-1" readonly value="{{rating.rate}}" aria-label="Betyg: {{rating.rate}} av 5"></sl-rating>
+        </div>
+        <button class="btn btn-sm btn-primary btn-more w-100 mt-auto" data-id="{{id}}">Visa mer</button>
+      </div>
+    </div>
+  </div>
+  {{/each}}
+</div>
+{{else}}
+<div class="text-muted text-center py-4">Välj en kategori för att se produkter.</div>
+{{/if}}
